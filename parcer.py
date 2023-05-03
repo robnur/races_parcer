@@ -14,7 +14,7 @@ import traceback
 try:
     os.remove("races_data_1_done.json")
     os.remove("races_data.pickle")
-    os.remove("parcer_EROR.log")
+    os.remove("parser_EROR.log")
 except:
     pass
 
@@ -28,7 +28,7 @@ except:
     pass
 
 #Error logging configuration
-logging.basicConfig(level=logging.ERROR, filename="parcer_EROR.log",format="%(asctime)s %(levelname)s %(message)s")
+logging.basicConfig(level=logging.ERROR, filename="parser_EROR.log",format="%(asctime)s %(levelname)s %(message)s")
 
 #Main link for parsing
 url_main = "https://www.canalturf.com/sitemap/sitemap-res.xml"
@@ -44,28 +44,28 @@ def is_number(str):
         return False
 
 #Function to get data about a horse from a table
-def parce_horses(url_parce):
+def parse_horses(url_parse):
     rows = []
-    link = BeautifulSoup(requests.get(url_parce).text, 'lxml').find(id="TablePartants")
+    link = BeautifulSoup(requests.get(url_parse).text, 'lxml').find(id="TablePartants")
     for row in link.contents[0].next_sibling:
         rows.append(row)
     return rows
 
 #Race parsing function
-def parce_race(url_race):
+def parse_race(url_race):
     try:
         data = {}
-        link_parce = url_race.replace("resultats-PMU","pronostics-PMU").replace("\n","")
+        link_parse = url_race.replace("resultats-PMU","pronostics-PMU").replace("\n","")
         race_info = url_race.split("/")
-        print(link_parce)
+        print(link_parse)
         data["date"] = race_info[4]
-        data["race_number"] = int(BeautifulSoup(requests.get(link_parce).text, 'lxml').find("a", class_="btn-primary").text)
+        data["race_number"] = int(BeautifulSoup(requests.get(link_parse).text, 'lxml').find("a", class_="btn-primary").text)
         data["hippodrome"] = race_info[5]
         data["race_name"] = race_info[6].split('_')[1].split('.')[0]
         data["race_number_global"] = int(race_info[6].split('_')[0])
-        data["url"] = link_parce
+        data["url"] = link_parse
 
-        horses_info = parce_horses(link_parce)
+        horses_info = parse_horses(link_parse)
         horses = {}
         for horse in horses_info:
             horse_number = horse.next_element.next_element.text
@@ -91,7 +91,7 @@ def parce_race(url_race):
         logging.exception(err)
         print(err)
         data.clear()
-        data["url"] = link_parce
+        data["url"] = link_parse
         data["ERROR"] = traceback.format_exc()
     return data
 
@@ -113,7 +113,7 @@ def save_json(data):
     return
 
 #The main function of passing
-def parce():
+def parse():
     #Cycle by year
     for link_year in soup.find_all('loc'):
         #Parsing races by year
@@ -121,7 +121,7 @@ def parce():
         list_urls = [i.text for i in url_year.find_all('loc')]
         #Multiprocessing code Pool(n) where n is the number of parallel processes
         with Pool(8) as p:
-            result = p.map(parce_race,list_urls)
+            result = p.map(parse_race,list_urls)
             save_json(result)
             save_pickle(result)
             print("Data saved")
@@ -129,5 +129,5 @@ def parce():
 
 #Beginning of code
 if __name__ == "__main__":
-    result_program = parce()
+    result_program = parse()
     print(result_program)
